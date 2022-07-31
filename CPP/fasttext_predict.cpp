@@ -9,6 +9,7 @@
 #include <stdio.h>     // fprintf
 #include <stdlib.h>    // free
 #include <fasttext.h>
+#include <string.h>
 #include <string>
 #include <sstream>
 
@@ -16,6 +17,7 @@ using namespace std;
 
 fasttext::FastText ftext;
 
+#ifndef FTEXT_SHARED_LIB
 void printPredictions(
     const vector<pair<fasttext::real, string>>& predictions,
     bool printProb,
@@ -38,16 +40,34 @@ void printPredictions(
     cout << endl;
   }
 }
+#endif
 
-void predict(fasttext::FastText& m, std::string input) {
-    int32_t k = 1;
-    fasttext::real threshold = 0.0;
-    stringstream ioss(input);
-    vector<pair<fasttext::real, string>> predictions;
-    m.predictLine(ioss, predictions, k, threshold);
-    printPredictions(predictions, true, true);
+#ifdef FTEXT_SHARED_LIB
+extern "C" __attribute__((__visibility__("default")))
+#endif
+void load_model(const char *filename) {
+    ftext.loadModel(string(filename));
 }
 
+#ifdef FTEXT_SHARED_LIB
+extern "C" __attribute__((__visibility__("default")))
+#endif
+void predict(const char *input, char *out) {
+    int32_t k = 1;
+    fasttext::real threshold = 0.0;
+    stringstream ioss((std::string(input)));
+    vector<pair<fasttext::real, string>> predictions;
+    ftext.predictLine(ioss, predictions, k, threshold);
+#ifndef FTEXT_SHARED_LIB
+    printPredictions(predictions, true, true);
+#endif
+    for (const auto& prediction : predictions) {
+      strcpy(out, prediction.second.c_str());
+      break;
+    }
+}
+
+#ifndef FTEXT_SHARED_LIB
 int main(int argc, const char** argv)
 {
     const char* const exeName = argv[0];
@@ -59,11 +79,11 @@ int main(int argc, const char** argv)
         return 1;
     }
 
-    string in_str(argv[1]);
+    load_model("lid.176.bin");
 
-    ftext.loadModel(string("lid.176.bin"));
-    predict(ftext, in_str);
+    char lang_code[20];
+    predict(argv[1], lang_code);
  
     return 0;
 }
-
+#endif

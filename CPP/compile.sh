@@ -7,8 +7,10 @@ if [ ! -f "lid.176.bin" ]; then
 fi
 if [ ! -f "fastText/libfasttext.a" ]; then
   cd fastText
-  make
-  ar rcs libfasttext.a args.o autotune.o matrix.o dictionary.o loss.o productquantizer.o densematrix.o quantmatrix.o vector.o model.o utils.o meter.o fasttext.o 
+  cmake .
+  make fasttext-static
   cd ..
 fi
 g++ -std=c++11 -O3 -o fasttext_predict -I./fastText/src fasttext_predict.cpp fastText/libfasttext.a
+g++ -std=c++11 -O3 -fPIC -DFTEXT_SHARED_LIB=1 -c -I./fastText/src fasttext_predict.cpp
+g++ -fPIC -shared -DFTEXT_SHARED_LIB=1 -o fasttext_predict.so -fvisibility=hidden fasttext_predict.o fastText/libfasttext.a

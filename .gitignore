@@ -1,3 +1,9 @@
 CPP/lid.176.bin
 CPP/fasttext_predict
 CPP/fastText
+*.o
+*.so
+mono*.json
+a.out
+*.exe
+
